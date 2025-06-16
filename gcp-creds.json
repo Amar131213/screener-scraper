@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "mystic-cirrus-462809-r2",
+  "private_key_id": "56ad7a60372aba28f1460c9c0b0bc4a5ad7580a4",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCb9V2UEQrwXBlj\nsaxLbC8G/hdpsjeHWKFf4w7UHArZ6ACFiErVn3k8nRKVdHlL+0r+EwJzUZ7i2ycJ\n8qSxTrWvzHPcUX7AJTgSnIo1l7/MrvLL5pblgxK7jTztT4K6SCfaumdA5atzbEo8\nWSjj6OVbtKyX7hfSNn7WHYuDQNsiU/t4cIs2B0P7vVFuEXbB8rtwSyIcPhUSpHBG\ng7kBRSkdg5+BQQPkPnBa4yXhS1x9WvladTK0KoOZ3rZVWVoJKqBANgJxgyy8ZOij\nmoNXqOKhS4LEu3Gf4DWQcVMwvCHSM+ZzCuneGzY4KquylPQ79Ix1QZ2LdyJeeX5b\ntvo8TiR5AgMBAAECggEATEKIhZRn0uxWBeelJiQ6QqMQc8CPYoE2N5rhb1pe+/pz\n9teUMC0QrVDo+2e+wCaanu5Qrm7k0Gz1A+pAGesw8Et7A+pdnjsU1hTxiA8x3DZX\nxth0RLn4+PixKCFO/SO3ST8IqjUjxwbWrfezBO6m6FbKZmgoAcRf9PbxdzbJcFj5\nHn0Mjg965kuTJCbWZ+izATlejkwhVLtNrhGaVFn9OhVQTf6CDNMmExOq1S0/OcFt\nb4HK2/tc4cSaDi0jVIqTr21+2rZo25IbgwHDN6m4/lL2nSrAalAtG9xz7IaQI91n\nSG6hM2tjaGXXx49U4yGi1jaw+lYiBEWun8iJJuNveQKBgQDIm3SwVvKkn570onSS\nHkQxxlGikEtLADWJyPu26O0qEo3QbxSW5yOFSM4n1xw16NHm70GLnVCiaQzd80mz\nbh9R2Ke52dU86mrKL3NRq2Kig70bO7xjhQ8HbI4z9fBQgLYIiTBlmIv4HI9Nj9Qo\nPUvRBe9mq835XhqI/D3WMPxUQwKBgQDHBcWWsER/fMmwTztZUE4Hd71k9qtkFW6L\nqnr71RweIi+9De7hwRHiUDwWv9/WZkK/XNg2lK82zXZxKkqwnB2IxMGhqazq7nC9\nYmR2032S3DHPXmwue1BMUgxgXDdajsBSd55VidtNer16LiLHygK3Du97lSq/PwkG\n3z+NVmQWkwKBgGSBDeszBInZtseVhJWYOE4/r7KkXDSNPEV1vjabaAbGGOquXEBm\nOPOT0EVBjk6sAE2U3N/Xxwg3XUztkKUmrOZSh2WjbyP/xdTaBQqLtPT6z4mPWgj6\nJtdvWadKtkV+1rRcFzUvQiDiHiGbx40JeKyWLqTfumgO73hl940SKbkFAoGAUI3X\ngbxqnSdHAyOuo+HLE161u83TZTj/e2xPRurk7JVtuRmQnLNmp7FOAO88jCzry0Sr\nBrx7hrT2wasafA1ULu1kaiihIp3L5/uRKj9DzlNtnb9cDhw/TgTPmZj5lp+83CQq\nY/jeWKfbVT6jOTZcjvdumxivKqU65BssP+q9rB0CgYEAyEylV+YN7b48grAlDd7O\nWrfRgy3MQzZmsJwS4LP5Uc+XFvWbOPyCZ5T4jV+cYZxTpyoS0sxcweOq11jMivrh\n9aeG6aLT9zznqCdHW+gza4ovuVtaOZ2MkjXxekqHeX+DwzKs2rJ1EQuGFekv/GS6\nrf+oQC9rBe2bqwBLG1mu4cc=\n-----END PRIVATE KEY-----\n",
+  "client_email": "mystic-cirrus-462809-r2@appspot.gserviceaccount.com",
+  "client_id": "102966123081768113292",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/mystic-cirrus-462809-r2%40appspot.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
