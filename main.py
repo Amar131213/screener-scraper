@@ -1,3 +1,4 @@
+import threading
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
@@ -5,17 +6,25 @@ import requests
 from bs4 import BeautifulSoup
 import time
 from io import StringIO
-import sys  # Added to exit cleanly on Render
+from fastapi import FastAPI
+import uvicorn
 
-# Authenticate using service account
-SERVICE_ACCOUNT_FILE = '/etc/secrets/service_account.json'
+app = FastAPI()
+SERVICE_ACCOUNT_FILE = 'service_account.json'  # Render पर local रखो
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-
 creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 gc = gspread.authorize(creds)
-
-# Start session
 session = requests.Session()
+
+username = 'amarbhavsarb@gmail.com'
+password = 'abcd@0000'
+spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1IHZkyzSnOcNphq9WO9pkyTaTkAO_P1eJ3mHb2VnCkJI/edit#gid=0'
+sheet_name = 'Sheet2'
+url_base = 'https://www.screener.in/screens/1790669/ttyy/?page={}'
+
+@app.get("/")
+def root():
+    return {"status": "Scraper is alive"}
 
 def login_to_screener(username, password):
     try:
@@ -23,19 +32,16 @@ def login_to_screener(username, password):
         login_page_response = session.get(url_login)
         soup = BeautifulSoup(login_page_response.content, 'html.parser')
         csrf_token = soup.find('input', {'name': 'csrfmiddlewaretoken'}).get('value')
-
         login_payload = {
             'csrfmiddlewaretoken': csrf_token,
             'next': '',
             'username': username,
             'password': password
         }
-
         login_headers = {
             'Referer': 'https://www.screener.in/',
             'User-Agent': 'Mozilla/5.0'
         }
-
         login_response = session.post(url_login, data=login_payload, headers=login_headers)
         return 'Core Watchlist' in login_response.text
     except Exception as e:
@@ -53,18 +59,10 @@ def fetch_data_with_retry(url, retries=10, delay=2):
             time.sleep(delay)
     return None
 
-# --- CONFIGURATION ---
-username = 'amarbhavsarb@gmail.com'
-password = 'abcd@0000'
-spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1IHZkyzSnOcNphq9WO9pkyTaTkAO_P1eJ3mHb2VnCkJI/edit#gid=0'
-sheet_name = 'Sheet2'
-url_base = 'https://www.screener.in/screens/1790669/ttyy/?page={}'
-
-# --- MAIN SCRIPT ---
-def main():
+def run_scraper():
     if not login_to_screener(username, password):
         print("Login failed.")
-        sys.exit(1)
+        return
 
     print("Login successful!")
     sh = gc.open_by_url(spreadsheet_url)
@@ -143,8 +141,7 @@ def main():
 
     worksheet.update(values=all_data, range_name='A1', value_input_option='USER_ENTERED')
     print("Sheet updated successfully.")
-    sys.exit("✅ Scraping done. Exiting Render service.")
 
-# Call main function
 if __name__ == "__main__":
-    main()
+    threading.Thread(target=run_scraper).start()
+    uvicorn.run(app, host="0.0.0.0", port=8000)
