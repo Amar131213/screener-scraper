@@ -5,6 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 import time
 from io import StringIO
+import sys  # Added to exit cleanly on Render
 
 # Authenticate using service account
 SERVICE_ACCOUNT_FILE = '/etc/secrets/service_account.json'
@@ -41,19 +42,16 @@ def login_to_screener(username, password):
         print(f"Login Error: {e}")
         return False
 
-def fetch_data_with_retry(url, retries=10, delay=1):
+def fetch_data_with_retry(url, retries=10, delay=2):
     for attempt in range(retries):
         try:
             response = session.get(url)
             response.raise_for_status()
             return response
         except requests.RequestException as e:
-            if attempt < retries - 1:
-                print(f"Retry {attempt+1}/{retries} failed: {e}")
-                time.sleep(delay)
-            else:
-                print("Max retries reached.")
-                return None
+            print(f"Retry {attempt+1}/{retries} failed: {e}")
+            time.sleep(delay)
+    return None
 
 # --- CONFIGURATION ---
 username = 'amarbhavsarb@gmail.com'
@@ -63,9 +61,12 @@ sheet_name = 'Sheet2'
 url_base = 'https://www.screener.in/screens/1790669/ttyy/?page={}'
 
 # --- MAIN SCRIPT ---
-if login_to_screener(username, password):
-    print("Login successful!")
+def main():
+    if not login_to_screener(username, password):
+        print("Login failed.")
+        sys.exit(1)
 
+    print("Login successful!")
     sh = gc.open_by_url(spreadsheet_url)
     worksheet = sh.worksheet(sheet_name)
     worksheet.batch_clear(['A1:T6000'])
@@ -76,7 +77,7 @@ if login_to_screener(username, password):
 
     while True:
         url = url_base.format(page_number)
-        response = fetch_data_with_retry(url, retries=10, delay=2)
+        response = fetch_data_with_retry(url)
 
         if response is None:
             break
@@ -93,6 +94,9 @@ if login_to_screener(username, password):
 
         soup = BeautifulSoup(response.content, 'html.parser')
         table = soup.find('table', class_='data-table')
+        if not table:
+            break
+
         rows = table.find('tbody').find_all('tr')
 
         for i, row in enumerate(rows):
@@ -139,5 +143,8 @@ if login_to_screener(username, password):
 
     worksheet.update(values=all_data, range_name='A1', value_input_option='USER_ENTERED')
     print("Sheet updated successfully.")
-else:
-    print("Login failed.")
+    sys.exit("✅ Scraping done. Exiting Render service.")
+
+# Call main function
+if __name__ == "__main__":
+    main()
