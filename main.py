@@ -7,7 +7,7 @@ import time
 from io import StringIO
 
 # Authenticate using service account
-SERVICE_ACCOUNT_FILE = 'service_account.json'
+SERVICE_ACCOUNT_FILE = '/etc/secrets/service_account.json'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
