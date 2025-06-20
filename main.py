@@ -11,31 +11,34 @@ import uvicorn
 
 app = FastAPI()
 
-# Google Sheets credentials setup
-SERVICE_ACCOUNT_FILE = 'service_account.json'  # Render पर local रखें
+# === Google Sheets Credentials Setup ===
+SERVICE_ACCOUNT_FILE = 'service_account.json'  # Keep this file in root
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 gc = gspread.authorize(creds)
 
-# Screener login and setup
+# === Screener Login Details ===
 session = requests.Session()
 username = 'amarbhavsarb@gmail.com'
 password = 'abcd@0000'
 
-# Sheet and URL details
+# === Google Sheet and Screener URL ===
 spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1IHZkyzSnOcNphq9WO9pkyTaTkAO_P1eJ3mHb2VnCkJI/edit#gid=0'
 sheet_name = 'Sheet2'
 url_base = 'https://www.screener.in/screens/1790669/ttyy/?page={}'
 
+# === Root endpoint for Render testing ===
 @app.get("/")
 def root():
     return {"status": "Scraper is alive"}
 
+# === Run endpoint for cron-job.org ===
 @app.get("/run")
-def run_endpoint():
+def run():
     threading.Thread(target=run_scraper).start()
     return {"status": "Scraper started"}
 
+# === Screener Login ===
 def login_to_screener(username, password):
     try:
         url_login = 'https://www.screener.in/login/'
@@ -58,6 +61,7 @@ def login_to_screener(username, password):
         print(f"Login Error: {e}")
         return False
 
+# === Retry Logic for Page Fetching ===
 def fetch_data_with_retry(url, retries=10, delay=2):
     for attempt in range(retries):
         try:
@@ -69,6 +73,7 @@ def fetch_data_with_retry(url, retries=10, delay=2):
             time.sleep(delay)
     return None
 
+# === Main Scraper Logic ===
 def run_scraper():
     if not login_to_screener(username, password):
         print("Login failed.")
@@ -86,13 +91,11 @@ def run_scraper():
     while True:
         url = url_base.format(page_number)
         response = fetch_data_with_retry(url)
-
         if response is None:
             break
 
         html_content = response.text
         dataFrames = pd.read_html(StringIO(html_content), header=0)
-
         if not dataFrames:
             break
 
@@ -106,7 +109,6 @@ def run_scraper():
             break
 
         rows = table.find('tbody').find_all('tr')
-
         for i, row in enumerate(rows):
             cols = row.find_all('td')
             if len(cols) > 1:
@@ -152,5 +154,6 @@ def run_scraper():
     worksheet.update(values=all_data, range_name='A1', value_input_option='USER_ENTERED')
     print("Sheet updated successfully.")
 
+# === Only for local run ===
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
