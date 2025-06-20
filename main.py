@@ -10,14 +10,19 @@ from fastapi import FastAPI
 import uvicorn
 
 app = FastAPI()
-SERVICE_ACCOUNT_FILE = 'service_account.json'  # Render पर local रखो
+
+# Google Sheets credentials setup
+SERVICE_ACCOUNT_FILE = 'service_account.json'  # Render पर local रखें
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 gc = gspread.authorize(creds)
-session = requests.Session()
 
+# Screener login and setup
+session = requests.Session()
 username = 'amarbhavsarb@gmail.com'
 password = 'abcd@0000'
+
+# Sheet and URL details
 spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1IHZkyzSnOcNphq9WO9pkyTaTkAO_P1eJ3mHb2VnCkJI/edit#gid=0'
 sheet_name = 'Sheet2'
 url_base = 'https://www.screener.in/screens/1790669/ttyy/?page={}'
@@ -25,6 +30,11 @@ url_base = 'https://www.screener.in/screens/1790669/ttyy/?page={}'
 @app.get("/")
 def root():
     return {"status": "Scraper is alive"}
+
+@app.get("/run")
+def run_endpoint():
+    threading.Thread(target=run_scraper).start()
+    return {"status": "Scraper started"}
 
 def login_to_screener(username, password):
     try:
@@ -143,5 +153,4 @@ def run_scraper():
     print("Sheet updated successfully.")
 
 if __name__ == "__main__":
-    threading.Thread(target=run_scraper).start()
     uvicorn.run(app, host="0.0.0.0", port=8000)
