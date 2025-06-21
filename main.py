@@ -1,159 +1,152 @@
-import threading
+# ------------------------ REQUIRED LIBRARIES ------------------------
+from flask import Flask, jsonify
 import pandas as pd
 import gspread
-from google.oauth2.service_account import Credentials
 import requests
 from bs4 import BeautifulSoup
 import time
 from io import StringIO
-from fastapi import FastAPI
-import uvicorn
+from google.oauth2.service_account import Credentials
 
-app = FastAPI()
+# ------------------------ FLASK APP SETUP ------------------------
+app = Flask(__name__)
 
-# === Google Sheets Credentials Setup ===
-SERVICE_ACCOUNT_FILE = 'service_account.json'  # Keep this file in root
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+# ------------------------ GOOGLE SHEET AUTH ------------------------
+SERVICE_ACCOUNT_FILE = "service_account.json"  # Put this in your repo
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 gc = gspread.authorize(creds)
 
-# === Screener Login Details ===
-session = requests.Session()
-username = 'amarbhavsarb@gmail.com'
-password = 'abcd@0000'
-
-# === Google Sheet and Screener URL ===
-spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1IHZkyzSnOcNphq9WO9pkyTaTkAO_P1eJ3mHb2VnCkJI/edit#gid=0'
-sheet_name = 'Sheet2'
-url_base = 'https://www.screener.in/screens/1790669/ttyy/?page={}'
-
-# === Root endpoint for Render testing ===
-@app.get("/")
-def root():
-    return {"status": "Scraper is alive"}
-
-# === Run endpoint for cron-job.org ===
-@app.get("/run")
-def run():
-    threading.Thread(target=run_scraper).start()
-    return {"status": "Scraper started"}
-
-# === Screener Login ===
-def login_to_screener(username, password):
+# ------------------------ LOGIN FUNCTION ------------------------
+def login_to_screener(session, username, password):
     try:
-        url_login = 'https://www.screener.in/login/'
-        login_page_response = session.get(url_login)
-        soup = BeautifulSoup(login_page_response.content, 'html.parser')
-        csrf_token = soup.find('input', {'name': 'csrfmiddlewaretoken'}).get('value')
-        login_payload = {
+        login_url = 'https://www.screener.in/login/'
+        res = session.get(login_url)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        csrf_token = soup.find('input', {'name': 'csrfmiddlewaretoken'})['value']
+
+        payload = {
             'csrfmiddlewaretoken': csrf_token,
-            'next': '',
             'username': username,
-            'password': password
+            'password': password,
+            'next': ''
         }
-        login_headers = {
-            'Referer': 'https://www.screener.in/',
+
+        headers = {
+            'Referer': 'https://www.screener.in/login/',
             'User-Agent': 'Mozilla/5.0'
         }
-        login_response = session.post(url_login, data=login_payload, headers=login_headers)
-        return 'Core Watchlist' in login_response.text
-    except Exception as e:
-        print(f"Login Error: {e}")
+
+        res2 = session.post(login_url, data=payload, headers=headers)
+        return 'Core Watchlist' in res2.text
+    except:
         return False
 
-# === Retry Logic for Page Fetching ===
-def fetch_data_with_retry(url, retries=10, delay=2):
+# ------------------------ RETRY FUNCTION ------------------------
+def fetch_data_with_retry(session, url, retries=10, delay=1):
     for attempt in range(retries):
         try:
             response = session.get(url)
             response.raise_for_status()
             return response
-        except requests.RequestException as e:
-            print(f"Retry {attempt+1}/{retries} failed: {e}")
+        except:
             time.sleep(delay)
     return None
 
-# === Main Scraper Logic ===
+# ------------------------ ACCOUNTS CONFIG ------------------------
+accounts = [
+    {"username": "amarbhavsarb@gmail.com",     "password": "abcd@0000", "url": "https://www.screener.in/screens/1790669/ttyy/?page={}", "range": "A1:T6000"},
+    {"username": "amarbhavsarb+2@gmail.com",   "password": "abcd@0000", "url": "https://www.screener.in/screens/1790603/ttyy/?page={}", "range": "Z1:AQ6000"},
+    {"username": "amarbhavsarb+3@gmail.com",   "password": "abcd@0000", "url": "https://www.screener.in/screens/1790798/ttyy/?page={}", "range": "AY1:BP6000"},
+    {"username": "amarbhavsarb+4@gmail.com",   "password": "abcd@0000", "url": "https://www.screener.in/screens/2113854/ttyy/?page={}", "range": "BX1:CO6000"},
+    {"username": "amarbhavsarb+5@gmail.com",   "password": "abcd@0000", "url": "https://www.screener.in/screens/2358928/ttyy/?page={}", "range": "CW1:DN6000"},
+]
+
+# ------------------------ SHEET SETUP ------------------------
+spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1IHZkyzSnOcNphq9WO9pkyTaTkAO_P1eJ3mHb2VnCkJI/edit#gid=0'
+sheet = gc.open_by_url(spreadsheet_url).worksheet('Sheet2')
+
+# ------------------------ SCRAPING ROUTE ------------------------
+@app.route('/run')
 def run_scraper():
-    if not login_to_screener(username, password):
-        print("Login failed.")
-        return
+    for idx, acc in enumerate(accounts):
+        print(f"\n🚀 Scraping Account {idx+1}: {acc['username']}")
+        session = requests.Session()
 
-    print("Login successful!")
-    sh = gc.open_by_url(spreadsheet_url)
-    worksheet = sh.worksheet(sheet_name)
-    worksheet.batch_clear(['A1:T6000'])
+        if login_to_screener(session, acc['username'], acc['password']):
+            print("✅ Login successful")
+            all_data = []
+            page = 1
+            blank_row = [""] * 20
 
-    all_data = []
-    blank_row = [""] * 20
-    page_number = 1
+            while True:
+                url = acc['url'].format(page)
+                response = fetch_data_with_retry(session, url)
+                if not response:
+                    break
 
-    while True:
-        url = url_base.format(page_number)
-        response = fetch_data_with_retry(url)
-        if response is None:
-            break
+                dfs = pd.read_html(StringIO(response.text), header=0)
+                if not dfs:
+                    break
+                df = dfs[0].fillna('')
+                df['Classification'] = None
+                df['Hyperlink'] = None
 
-        html_content = response.text
-        dataFrames = pd.read_html(StringIO(html_content), header=0)
-        if not dataFrames:
-            break
+                soup = BeautifulSoup(response.content, 'html.parser')
+                table = soup.find('table', class_='data-table')
+                rows = table.find('tbody').find_all('tr')
 
-        df = dataFrames[0].fillna('')
-        df['Classification'] = None
-        df['Hyperlink'] = None
+                for i, row in enumerate(rows):
+                    cols = row.find_all('td')
+                    if len(cols) > 1:
+                        try:
+                            value = float(cols[5].text.replace(',', ''))
+                            if 0.01 <= value <= 99.99:
+                                classification = 1
+                            elif 100 <= value <= 999.99:
+                                classification = 2
+                            elif 1000 <= value <= 99999.99:
+                                classification = 3
+                            elif value >= 100000:
+                                classification = 4
+                            else:
+                                classification = None
+                            if i > 0:
+                                df.iloc[i - 1, -2] = classification
+                        except:
+                            df.iloc[i - 1, -2] = None
 
-        soup = BeautifulSoup(response.content, 'html.parser')
-        table = soup.find('table', class_='data-table')
-        if not table:
-            break
+                        name_col = cols[1]
+                        link = name_col.find('a')['href'] if name_col.find('a') else ''
+                        full_link = f'https://www.screener.in{link}'
+                        hyperlink_formula = f'=HYPERLINK("{full_link}", "{name_col.text.strip()}")'
+                        if i > 0:
+                            df.iloc[i - 1, -1] = hyperlink_formula
 
-        rows = table.find('tbody').find_all('tr')
-        for i, row in enumerate(rows):
-            cols = row.find_all('td')
-            if len(cols) > 1:
-                try:
-                    value = float(cols[5].text.replace(',', ''))
-                    if 0.01 <= value <= 99.99:
-                        classification = 1
-                    elif 100 <= value <= 999.99:
-                        classification = 2
-                    elif 1000 <= value <= 99999.99:
-                        classification = 3
-                    elif value >= 100000:
-                        classification = 4
-                    else:
-                        classification = None
-                    if i > 0:
-                        df.iloc[i - 1, -2] = classification
-                except:
-                    df.iloc[i - 1, -2] = None
+                if 'Down  %' in df.columns:
+                    df['Down  %'] = df['Down  %'].apply(lambda x: f'-{float(x)}' if str(x).replace('.', '', 1).isdigit() else x)
 
-                name_column = cols[1]
-                link = name_column.find('a')['href'] if name_column.find('a') else ''
-                full_link = f'https://www.screener.in{link}'
-                hyperlink = f'=HYPERLINK("{full_link}", "{name_column.text.strip()}")'
-                if i > 0:
-                    df.iloc[i - 1, -1] = hyperlink
+                df = df[[*df.columns[:-2], 'Classification', 'Hyperlink']]
 
-        df = df[[*df.columns[:-2], 'Classification', 'Hyperlink']]
+                all_data += [df.columns.tolist()] + df.values.tolist() + [blank_row]
 
-        if 'Down  %' in df.columns:
-            df['Down  %'] = df['Down  %'].apply(
-                lambda x: f'-{float(x)}' if str(x).replace('.', '', 1).isdigit() else x
-            )
+                if 'Next' not in response.text:
+                    break
+                page += 1
+                time.sleep(0.7)
 
-        cleaned = df.values.tolist()
-        all_data += [df.columns.tolist()] + cleaned + [blank_row]
+            try:
+                sheet.batch_clear([acc['range']])
+                sheet.update(values=all_data, range_name=acc['range'], value_input_option='USER_ENTERED')
+                print(f"✅ Data written to Google Sheet range: {acc['range']}")
+            except Exception as e:
+                print(f"❌ Sheet update failed: {e}")
 
-        print(f"Page {page_number} scraped.")
-        if 'Next' not in response.text:
-            break
-        page_number += 1
+        else:
+            print("❌ Login failed")
 
-    worksheet.update(values=all_data, range_name='A1', value_input_option='USER_ENTERED')
-    print("Sheet updated successfully.")
+    return jsonify({"status": "success"})
 
-# === Only for local run ===
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# ------------------------ MAIN ENTRYPOINT ------------------------
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080)
