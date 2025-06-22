@@ -1,9 +1,11 @@
 fastapi
 uvicorn
 pandas
+beautifulsoup4
 gspread
 google-auth
-beautifulsoup4
+google-auth-oauthlib
+google-auth-httplib2
+bs4
 requests
 lxml
-flask
