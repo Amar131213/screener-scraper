@@ -12,7 +12,7 @@ import uvicorn
 
 app = FastAPI()
 
-# ------------------------ GOOGLE SHEET AUTHENTICATION ------------------------
+# ------------------------ GOOGLE SHEET AUTHENTICATION -------------------------
 SERVICE_ACCOUNT_FILE = 'service_account.json'  # ← ये फाइल Render पर रखें
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
